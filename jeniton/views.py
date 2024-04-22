@@ -16,7 +16,7 @@ from jeniton.mail_sender import sender_func
 
 
 
-@api_view(['GET','POST'])
+@api_view(['GET'])
 def home(request,*args,**kwargs):
     allData = Items.objects.all()
     all_data = ItemsSerializer(allData,many=True)
@@ -26,7 +26,7 @@ def home(request,*args,**kwargs):
     return Response(context,status=200)
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def item_detail(request,pk,*args,**kwargs):
     obj = Items.objects.get(pk=int(pk))
     serializers = ItemsSerializer(obj)

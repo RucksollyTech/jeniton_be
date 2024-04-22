@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Purchases,Items,Images,Items_Purchases
+from .models import Reviews,Purchases,Items,Images,Items_Purchases
 from django.contrib.auth.models import User
 # from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -19,14 +19,23 @@ class PurchasesSerializer(serializers.ModelSerializer):
         model = Purchases
         fields = '__all__'
 
+class ReviewsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reviews
+        fields = '__all__'
+
+
 class ItemsSerializer(serializers.ModelSerializer):
     other_images = serializers.SerializerMethodField(read_only= True)
+    reviews = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = Items
-        fields = ['id', 'name','color','price','cover_image','description','dimensions_LHW_in_inches','properties_separated_with_double_comma','extra_information','sustainability','product_care','material','other_images','amount_available','model_image','date']
+        fields = ['id', 'name','color','category','sizes','sizes_value_measurement','material','price','cover_image','reviews','description','dimensions_LHW_in_inches','properties_separated_with_double_comma','extra_information','sustainability','product_care','other_images','amount_available','date']
 
     def get_other_images(self,obj):
         return ImageSerializer(obj.other_images, many=True).data
+    def get_reviews(self,obj):
+        return ReviewsSerializer(obj.reviews, many=True).data
 
 
 

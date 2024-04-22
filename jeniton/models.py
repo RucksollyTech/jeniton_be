@@ -13,18 +13,35 @@ class Images(models.Model):
     def __str__(self):
         return f"image--{self.image}"
 
+class Reviews(models.Model):
+    user = models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True) 
+    review = models.TextField( null=True,blank=True)
+    value = models.IntegerField(default =0)
+    date= models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        ordering= ["-id"]
+        
+    def __str__(self):
+        return f"Review--{self.value}"
+
+
 class Items(models.Model):
     name = models.CharField(max_length=1000)
     color = models.CharField(max_length=1000, null=True,blank=True) 
-    category = models.CharField(max_length=1000, null=True,blank=True,default="Item,Shoe or Hair") 
+    category = models.CharField(max_length=1000, null=True,blank=True,default="Bag,Shoe or Hair") 
     material = models.CharField(max_length=1000, null=True,blank=True) 
     price = models.IntegerField(default =0)
     cover_image = models.ImageField(upload_to ="media/", null=True,blank=True)
     other_images = models.ManyToManyField(Images,blank=True)
+    reviews = models.ManyToManyField(Reviews,blank=True)
     amount_available = models.IntegerField(default =0)
+    sizes = models.CharField(max_length=1000, null=True,blank=True) 
+    sizes_value_measurement = models.CharField(max_length=1000, null=True,blank=True,default="UK") 
     description = models.TextField( null=True,blank=True)
     dimensions_LHW_in_inches = models.CharField(max_length=1000, null=True,blank=True,default="0 x 0 x 0")
     properties_separated_with_double_comma = models.TextField( null=True,blank=True,default="Ankara Item,,Durable")
+    extra_information = models.TextField( null=True,blank=True)
     sustainability = models.TextField( null=True,blank=True)
     product_care = models.TextField( null=True,blank=True)
     counter = models.IntegerField(default =0)
