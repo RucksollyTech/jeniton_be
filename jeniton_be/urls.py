@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import home,unsubscribe,item_detail,all_items,items_search,newsletter
+from jeniton.views import home,unsubscribe,item_review_data,item_detail,all_items,items_search,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -15,5 +15,6 @@ urlpatterns = [
     path('api/unsubscribe', unsubscribe),
     path('api/search', items_search),
     path('api/item_detail/<str:pk>', item_detail),
+    path('api/item_review/<str:pk>', item_review_data),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import Purchases,Items,Items_Purchases,Newsletter
-from .serializers import ItemsSerializer
+from .serializers import ItemsSerializer,ReviewsSerializer
 from django.conf import settings
 from django.db.models import Q
 
@@ -30,14 +30,93 @@ def home(request,*args,**kwargs):
 def item_detail(request,pk,*args,**kwargs):
     obj = Items.objects.get(pk=int(pk))
     serializers = ItemsSerializer(obj)
-    return Response(serializers.data,status=200)
+    similar_items = Items.objects.filter(name__icontains=obj.name,category__icontains=obj.category).exclude(id=obj.id).all()[:6]
+    serializer_similar_items = ItemsSerializer(similar_items,many=True)
+    return Response({"data":serializers.data,"similar":serializer_similar_items.data},status=200)
 
+@api_view(['GET'])
+def item_review_data(request,pk,*args,**kwargs):
+    obj = Items.objects.get(pk=int(pk))
+    serializer = ReviewsSerializer(obj.reviews,many=True)
+    return Response(serializer.data,status=200)
 
 @api_view(['GET'])
 def all_items(request,*args,**kwargs):
     obj = Items.objects.all()
     serializers = ItemsSerializer(obj, many = True)
     return Response({"items":serializers.data},status=200)
+
+
+
+
+@api_view(['GET'])
+def items_search(request,*args,**kwargs):
+    page = request.query_params.get("page")
+    query = request.query_params.get("query")
+    items =[]
+    if query:
+        items = Items.objects.filter(Q(description__icontains=query)| Q(name__icontains=query)| Q(price__icontains=query)).all()
+    paginator = Paginator(items,20)
+    
+    try:
+        items = paginator.page(page)
+    except PageNotAnInteger:
+        items = paginator.page(1)
+    except EmptyPage:
+        page = paginator.num_pages
+        items = paginator.page(paginator.num_pages)
+    serializer = ItemsSerializer(items,many=True)
+    if page == None:
+        page = 1
+    page = int(page) 
+    context={
+        "items" : serializer.data,
+        "page": page, 
+        "pages": paginator.num_pages
+    }
+      
+    
+    return Response(context,status=200)
+
+
+
+@api_view(['POST'])
+def newsletter(request,*args,**kwargs):
+    data = request.data
+    data_check = Newsletter.objects.filter(email=data.get('email')).first()
+    if not data_check:
+        Newsletter.objects.create(
+            email = data.get('email'),
+        )
+        the_mail = f'''
+            <p>Your newsletter subscription was successful.</p>
+            <p style="padding-top:30px">Click the button below unsubscribe anytime.</p>
+            <p>
+                <a
+                    href="{settings.FRONTEND_URL}/unsubscribe/{data.get('email')}"
+                    style="background:black; color: #fff; 
+                    padding: 8px 20px;border:none;
+                    text-decoration:none; border-radius: 10px"
+                >
+                    Unsubscribe
+                </a>
+            </p>
+        '''
+        other_mail(data.get('email'),the_mail)
+    return Response("success",status=200)
+
+@api_view(['POST'])
+def unsubscribe(request,*args,**kwargs):
+    data = request.data
+    data_check = Newsletter.objects.filter(email=data.get('email')).first()
+    if data_check:
+        data_check.delete()
+        the_mail = f'''
+            <p>Your request to unsubscribe for newsletter was successful.</p>
+        '''
+        other_mail(data.get('email'),the_mail)
+    return Response("success",status=200)
+
 
 
 # def calculate_Price(x):
@@ -206,74 +285,4 @@ def all_items(request,*args,**kwargs):
     
 #     return Response("error",status=403)
 
-
-
-
-@api_view(['GET'])
-def items_search(request,*args,**kwargs):
-    page = request.query_params.get("page")
-    query = request.query_params.get("query")
-    items =[]
-    if query:
-        items = Items.objects.filter(Q(description__icontains=query)| Q(name__icontains=query)| Q(price__icontains=query)).all()
-    paginator = Paginator(items,20)
-    
-    try:
-        items = paginator.page(page)
-    except PageNotAnInteger:
-        items = paginator.page(1)
-    except EmptyPage:
-        page = paginator.num_pages
-        items = paginator.page(paginator.num_pages)
-    serializer = ItemsSerializer(items,many=True)
-    if page == None:
-        page = 1
-    page = int(page) 
-    context={
-        "items" : serializer.data,
-        "page": page, 
-        "pages": paginator.num_pages
-    }
-      
-    
-    return Response(context,status=200)
-
-
-
-@api_view(['POST'])
-def newsletter(request,*args,**kwargs):
-    data = request.data
-    data_check = Newsletter.objects.filter(email=data.get('email')).first()
-    if not data_check:
-        Newsletter.objects.create(
-            email = data.get('email'),
-        )
-        the_mail = f'''
-            <p>Your newsletter subscription was successful.</p>
-            <p style="padding-top:30px">Click the button below unsubscribe anytime.</p>
-            <p>
-                <a
-                    href="{settings.FRONTEND_URL}/unsubscribe/{data.get('email')}"
-                    style="background:black; color: #fff; 
-                    padding: 8px 20px;border:none;
-                    text-decoration:none; border-radius: 10px"
-                >
-                    Unsubscribe
-                </a>
-            </p>
-        '''
-        other_mail(data.get('email'),the_mail)
-    return Response("success",status=200)
-
-@api_view(['POST'])
-def unsubscribe(request,*args,**kwargs):
-    data = request.data
-    data_check = Newsletter.objects.filter(email=data.get('email')).first()
-    if data_check:
-        data_check.delete()
-        the_mail = f'''
-            <p>Your request to unsubscribe for newsletter was successful.</p>
-        '''
-        other_mail(data.get('email'),the_mail)
-    return Response("success",status=200)
 
