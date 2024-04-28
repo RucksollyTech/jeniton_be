@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .models import Purchases,Items,Items_Purchases,Newsletter
+from .models import Reviews,Purchases,Items,Items_Purchases,Newsletter
 from .serializers import ItemsSerializer,ReviewsSerializer
 from django.conf import settings
 from django.db.models import Q
@@ -25,11 +25,16 @@ def home(request,*args,**kwargs):
     }
     return Response(context,status=200)
 
+@api_view(['GET'])
+def find_category(request,cat,*args,**kwargs):
+    obj = Items.objects.filter(category__icontains=cat).all()
+    serializers = ItemsSerializer(obj,many = True)
+    return Response({"items":serializers.data},status=200)
 
 @api_view(['GET'])
 def item_detail(request,pk,*args,**kwargs):
     obj = Items.objects.get(pk=int(pk))
-    serializers = ItemsSerializer(obj)
+    serializers = ItemsSerializer(obj,context={"detail": True})
     similar_items = Items.objects.filter(name__icontains=obj.name,category__icontains=obj.category).exclude(id=obj.id).all()[:6]
     serializer_similar_items = ItemsSerializer(similar_items,many=True)
     return Response({"data":serializers.data,"similar":serializer_similar_items.data},status=200)
@@ -45,6 +50,28 @@ def all_items(request,*args,**kwargs):
     obj = Items.objects.all()
     serializers = ItemsSerializer(obj, many = True)
     return Response({"items":serializers.data},status=200)
+
+@api_view(['POST'])
+def make_reviews(request,*args,**kwargs):
+    pk = request.data.get('id')
+    rate = request.data.get('rate')
+    review = request.data.get('review')
+
+    obj = Items.objects.get(pk=int(pk))
+    rev = Reviews.objects.create(review=review, value=rate)
+    if obj:
+        obj.reviews.add(rev)
+    serializer = ReviewsSerializer(rev)
+    serializers = ReviewsSerializer(obj.reviews.all()[:4],many=True)
+    return Response({"review":serializer.data,"reviews":serializers.data},status=200)
+
+
+
+
+
+
+
+
 
 
 

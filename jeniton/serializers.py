@@ -35,7 +35,8 @@ class ItemsSerializer(serializers.ModelSerializer):
     def get_other_images(self,obj):
         return ImageSerializer(obj.other_images, many=True).data
     def get_reviews(self,obj):
-        return ReviewsSerializer(obj.reviews, many=True).data
+        is_for_detail = self.context.get("detail")
+        return ReviewsSerializer(obj.reviews.all()[:4] if is_for_detail else obj.reviews, many=True).data
 
 
 
