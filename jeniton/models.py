@@ -3,6 +3,14 @@ from django.conf import settings
 from jeniton.mail_sender import sender_func
 User = settings.AUTH_USER_MODEL
 
+class USerToken(models.Model):
+    user_id = models.IntegerField()
+    token = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expired_at = models.DateTimeField()
+    date= models.DateTimeField(auto_now_add = True)
+
+
 class Images(models.Model):
     image = models.ImageField(upload_to ="media/", null=True,blank=True)
     date= models.DateTimeField(auto_now_add = True)

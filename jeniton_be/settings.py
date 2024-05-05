@@ -151,6 +151,8 @@ CORS_FOR_PRODUCTION = [
 
 CORS_ALLOWED_ORIGINS = CORS_FOR_DEV if DEBUG else CORS_FOR_PRODUCTION
 
+CORS_ALLOW_CREDENTIALS = True
+
 DEFAULT_RENDERER_CLASSES = [
     'rest_framework.renderers.JSONRenderer',
 ]
@@ -164,7 +166,7 @@ if DEBUG:
         'rest_framework.renderers.BrowsableAPIRenderer',
     ]
 REST_FRAMEWORK = {
-    
+    "EXCEPTION_HANDLER": "jeniton.exceptions.status_code_handler",
     'DEFAULT_AUTHENTICATION_CLASSES': DEFAULT_AUTHENTICATION_CLASSES,
     'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES,
     'DEFAULT_PARSER_CLASSES': (

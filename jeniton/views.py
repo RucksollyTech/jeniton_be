@@ -1,7 +1,17 @@
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from .models import Reviews,Purchases,Items,Items_Purchases,Newsletter
-from .serializers import ItemsSerializer,ReviewsSerializer
+from rest_framework.views import APIView
+from rest_framework.authentication import get_authorization_header
+from rest_framework import exceptions
+from rest_framework.decorators import api_view,authentication_classes
+import datetime
+
+from django.contrib.auth.hashers import make_password
+
+from .models import USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
+from .serializers import ItemsSerializer,ReviewsSerializer,USerSerializer
+
+from .authentication import decode_refresh_token,JWTAuthentication,create_access_token,create_refresh_token,decode_access_token
+
 from django.conf import settings
 from django.db.models import Q
 
@@ -12,6 +22,8 @@ from decouple import config
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from jeniton.mail_sender import sender_func
 # from jeniton.other_mails import other_mail
+
+from django.contrib.auth.models import User
 
 
 
@@ -65,15 +77,79 @@ def make_reviews(request,*args,**kwargs):
     serializers = ReviewsSerializer(obj.reviews.all()[:4],many=True)
     return Response({"review":serializer.data,"reviews":serializers.data},status=200)
 
+class RegisterApiViews(APIView):
+    def post(self, request):
+        data = request.data
+        if data["password"] != data["password_confirm"]:
+            raise exceptions.APIException("Passwords do not match")
+        
+        user = User.objects.create(
+            first_name=data['first_name'],
+            last_name=data["last_name"],
+            username=data['email'],
+            email=data['email']
+        )
+        user.set_password(data['password'])
+        user.save()
+        access_token =  create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
+        USerToken.objects.create(user_id=user.id, token=refresh_token, expired_at=datetime.datetime.utcnow() + datetime.timedelta(days=7))
+        response = Response()
+        response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
+        response.data ={
+            "token" : access_token,
+            "user" : USerSerializer(user).data
+        }
+        return response
 
 
+class LoginAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = User.objects.filter(email=email).first()
+        if not user:
+            raise exceptions.AuthenticationFailed("Invalid credentials")
+        if not user.check_password(password):
+            raise exceptions.AuthenticationFailed("Invalid credentials")
+        access_token =  create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
+        USerToken.objects.create(user_id=user.id, token=refresh_token, expired_at=datetime.datetime.utcnow() + datetime.timedelta(days=7))
+        response = Response()
+        response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
+        response.data ={
+            "token" : access_token
+        }
+        return response
 
+class UserAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    def get(self,request):
+        serializer = USerSerializer(request.user)
+        return Response(serializer.data,status=200)
 
+class RefreshAPIView(APIView):
+    def post(self,request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        _id = decode_refresh_token(refresh_token)
+        if not USerToken.objects.filter(user_id=_id,token=refresh_token,expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc)).exists():
+            raise exceptions.AuthenticationFailed("Invalid token")
+        access_token = create_access_token(_id)
+        return Response({
+            "token" : access_token
+        })
 
-
-
-
-
+class LogoutAPIView(APIView):
+    def post(self,request):
+        refresh_token = request.COOKIES.get("refresh_token")
+        USerToken.objects.filter(token=refresh_token).delete()
+        response = Response()
+        response.delete_cookie(key="refresh_token")
+        response.data= {
+            "message":"success",
+        }
+        response.status= 200
+        return response
 
 
 @api_view(['GET'])

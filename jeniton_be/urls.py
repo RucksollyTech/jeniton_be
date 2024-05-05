@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,items_search,newsletter
+from jeniton.views import LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,items_search,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -15,6 +15,11 @@ urlpatterns = [
     path('api/unsubscribe', unsubscribe),
     path('api/write_reviews', make_reviews),
     path('api/search', items_search),
+    path('api/register', RegisterApiViews.as_view()),
+    path('api/login', LoginAPIView.as_view()),
+    path('api/user', UserAPIView.as_view()),
+    path('api/refresh', RefreshAPIView.as_view()),
+    path('api/logout', LogoutAPIView.as_view()),
     path('api/items_category/<str:cat>', find_category),
     path('api/item_detail/<str:pk>', item_detail),
     path('api/item_review/<str:pk>', item_review_data),
