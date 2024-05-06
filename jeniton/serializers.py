@@ -30,7 +30,7 @@ class ItemsSerializer(serializers.ModelSerializer):
     reviews = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = Items
-        fields = ['id', 'name','color','category','sizes','sizes_value_measurement','material','price','cover_image','reviews','description','dimensions_LHW_in_inches','properties_separated_with_double_comma','extra_information','sustainability','product_care','other_images','amount_available','date']
+        fields = ['id', 'name','is_sold_out','color','category','sizes','sizes_value_measurement','material','price','cover_image','reviews','description','dimensions_LHW_in_inches','properties_separated_with_double_comma','extra_information','sustainability','product_care','other_images','amount_available','date']
 
     def get_other_images(self,obj):
         return ImageSerializer(obj.other_images, many=True).data

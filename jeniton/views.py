@@ -4,7 +4,7 @@ from rest_framework.authentication import get_authorization_header
 from rest_framework import exceptions
 from rest_framework.decorators import api_view,authentication_classes
 import datetime
-
+from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 
 from .models import USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
@@ -64,6 +64,13 @@ def all_items(request,*args,**kwargs):
     return Response({"items":serializers.data},status=200)
 
 @api_view(['POST'])
+def update_cart(request,*args,**kwargs):
+    ids = request.data.get('ids')
+    obj = Items.objects.filter(id__in=ids).all()
+    serializers = ItemsSerializer(obj, many = True)
+    return Response(serializers.data,status=200)
+
+@api_view(['POST'])
 def make_reviews(request,*args,**kwargs):
     pk = request.data.get('id')
     rate = request.data.get('rate')
@@ -94,10 +101,16 @@ class RegisterApiViews(APIView):
         access_token =  create_access_token(user.id)
         refresh_token = create_refresh_token(user.id)
         USerToken.objects.create(user_id=user.id, token=refresh_token, expired_at=datetime.datetime.utcnow() + datetime.timedelta(days=7))
+        # response = JsonResponse({"token": access_token, "user": USerSerializer(user).data})
+
+        # response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
+
         response = Response()
+        response.status = 200
         response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
         response.data ={
             "token" : access_token,
+            "refresh_token" : refresh_token,
             "user" : USerSerializer(user).data
         }
         return response
@@ -117,8 +130,13 @@ class LoginAPIView(APIView):
         USerToken.objects.create(user_id=user.id, token=refresh_token, expired_at=datetime.datetime.utcnow() + datetime.timedelta(days=7))
         response = Response()
         response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
+        # response.data ={
+        #     "token" : access_token
+        # }
         response.data ={
-            "token" : access_token
+            "token" : access_token,
+            "refresh_token" : refresh_token,
+            "user" : USerSerializer(user).data
         }
         return response
 
@@ -126,11 +144,12 @@ class UserAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     def get(self,request):
         serializer = USerSerializer(request.user)
-        return Response(serializer.data,status=200)
+        return Response({"user":serializer.data},status=200)
 
 class RefreshAPIView(APIView):
     def post(self,request):
-        refresh_token = request.COOKIES.get('refresh_token')
+        refresh_token = request.data.get('refresh_token')
+        # refresh_token = request.COOKIES.get('refresh_token')
         _id = decode_refresh_token(refresh_token)
         if not USerToken.objects.filter(user_id=_id,token=refresh_token,expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc)).exists():
             raise exceptions.AuthenticationFailed("Invalid token")
@@ -150,6 +169,14 @@ class LogoutAPIView(APIView):
         }
         response.status= 200
         return response
+
+
+
+
+
+
+
+
 
 
 @api_view(['GET'])
@@ -180,8 +207,6 @@ def items_search(request,*args,**kwargs):
       
     
     return Response(context,status=200)
-
-
 
 @api_view(['POST'])
 def newsletter(request,*args,**kwargs):
