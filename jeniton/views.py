@@ -7,8 +7,8 @@ import datetime
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 
-from .models import USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
-from .serializers import ItemsSerializer,ReviewsSerializer,USerSerializer
+from .models import CityData,USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
+from .serializers import Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
 
 from .authentication import decode_refresh_token,JWTAuthentication,create_access_token,create_refresh_token,decode_access_token
 
@@ -62,6 +62,12 @@ def all_items(request,*args,**kwargs):
     obj = Items.objects.all()
     serializers = ItemsSerializer(obj, many = True)
     return Response({"items":serializers.data},status=200)
+
+@api_view(['GET'])
+def delivery_location_data(request,*args,**kwargs):
+    obj = CityData.objects.get(pk=1)
+    serializers = Location_Data_Serializer(obj)
+    return Response(serializers.data,status=200)
 
 @api_view(['POST'])
 def update_cart(request,*args,**kwargs):

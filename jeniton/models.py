@@ -34,6 +34,14 @@ class Reviews(models.Model):
         return f"Review--{self.value}"
 
 
+class CityData(models.Model):
+    data = models.JSONField()
+    stat_and_price = models.JSONField(null=True,blank=True)
+    date= models.DateTimeField(auto_now_add = True)
+    
+    def __str__(self):
+        return f"City data {self.id}"
+
 class Items(models.Model):
     name = models.CharField(max_length=1000)
     color = models.CharField(max_length=1000, null=True,blank=True) 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Reviews,Purchases,Items,Images,Items_Purchases
+from .models import Reviews,Purchases,Items,Images,Items_Purchases,CityData
 from django.contrib.auth.models import User
 # from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -12,6 +12,11 @@ class ImageSerializer(serializers.ModelSerializer):
 class Items_PurchasesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Items_Purchases
+        fields = '__all__'
+
+class Location_Data_Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = CityData
         fields = '__all__'
 
 class PurchasesSerializer(serializers.ModelSerializer):

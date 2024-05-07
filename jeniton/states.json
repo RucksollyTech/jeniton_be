@@ -1,0 +1,146 @@
+[
+    {
+        "price":2000,
+        "name": "Abia"
+    },
+    {
+        "price":2000,
+        "name": "Akwa Ibom"
+    }, 
+    {
+        "price":2000,
+        "name": "Anambra"
+    }, 
+    {
+        "price":2000,
+        "name": "Bauchi"
+    }, 
+    {
+        "price":2000,
+        "name": "Bayelsa"
+    }, 
+    {
+        "price":2000,
+        "name": "Benue"
+    }, 
+    {
+        "price":2000,
+        "name": "Borno"
+    }, 
+    {
+        "price":2000,
+        "name": "Cross River"
+    }, 
+    {
+        "price":2000,
+        "name": "Delta"
+    }, 
+    {
+        "price":2000,
+        "name": "Ebonyi"
+    }, 
+    {
+        "price":2000,
+        "name": "Edo"
+    }, 
+    {
+        "price":2000,
+        "name": "Ekiti"
+    }, 
+    {
+        "price":2000,
+        "name": "Enugu"
+    }, 
+    {
+        "price":2000,
+        "name": "FCT"
+    }, 
+    {
+        "price":2000,
+        "name": "Gombe"
+    }, 
+    {
+        "price":2000,
+        "name": "Imo"
+    }, 
+    {
+        "price":2000,
+        "name": "Jigawa"
+    }, 
+    {
+        "price":2000,
+        "name": "Kaduna"
+    }, 
+    {
+        "price":2000,
+        "name": "Kano"
+    }, 
+    {
+        "price":2000,
+        "name": "Katsina"
+    }, 
+    {
+        "price":2000,
+        "name": "Kebbi"
+    }, 
+    {
+        "price":2000,
+        "name": "Kogi"
+    }, 
+    {
+        "price":2000,
+        "name": "Kwara"
+    }, 
+    {
+        "price":2000,
+        "name": "Lagos"
+    }, 
+    {
+        "price":2000,
+        "name": "Nasarawa"
+    },
+    {
+        "price":2000,
+        "name": "Niger"
+    }, 
+    {
+        "price":2000,
+        "name": "Ogun"
+    }, 
+    {
+        "price":2000,
+        "name": "Ondo"
+    }, 
+    {
+        "price":2000,
+        "name": "Osun"
+    }, 
+    {
+        "price":2000,
+        "name": "Oyo"
+    }, 
+    {
+        "price":2000,
+        "name": "Plateau"
+    }, 
+    {
+        "price":2000,
+        "name": "Rivers"
+    }, 
+    {
+        "price":2000,
+        "name": "Sokoto"
+    }, 
+    {
+        "price":2000,
+        "name": "Taraba"
+    }, 
+    {
+        "price":2000,
+        "name": "Yobe"
+    }, 
+    {
+        "price":2000,
+        "name": "Zamfara"
+    }
+]
