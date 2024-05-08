@@ -26,8 +26,6 @@ from jeniton.mail_sender import sender_func
 from django.contrib.auth.models import User
 
 
-
-
 @api_view(['GET'])
 def home(request,*args,**kwargs):
     allData = Items.objects.all()
@@ -160,13 +158,17 @@ class RefreshAPIView(APIView):
         if not USerToken.objects.filter(user_id=_id,token=refresh_token,expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc)).exists():
             raise exceptions.AuthenticationFailed("Invalid token")
         access_token = create_access_token(_id)
+        user = User.objects.get(pk=_id)
+        serializer = USerSerializer(user)
         return Response({
-            "token" : access_token
+            "token" : access_token,
+            "user" : serializer.data,
         })
 
 class LogoutAPIView(APIView):
     def post(self,request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        # refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.data.get("data")
         USerToken.objects.filter(token=refresh_token).delete()
         response = Response()
         response.delete_cookie(key="refresh_token")
