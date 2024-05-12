@@ -1,7 +1,11 @@
 from django.db import models
+from django.db.models.signals import post_save
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from django.conf import settings
 from jeniton.mail_sender import sender_func
 User = settings.AUTH_USER_MODEL
+from django.contrib.auth.models import User as User2
+
 
 class USerToken(models.Model):
     user_id = models.IntegerField()
@@ -48,6 +52,7 @@ class Items(models.Model):
     category = models.CharField(max_length=1000, null=True,blank=True,default="Bag,Shoe or Hair") 
     material = models.CharField(max_length=1000, null=True,blank=True) 
     price = models.IntegerField(default =0)
+    popular = models.IntegerField(default =0)
     cover_image = models.ImageField(upload_to ="media/", null=True,blank=True)
     other_images = models.ManyToManyField(Images,blank=True)
     reviews = models.ManyToManyField(Reviews,blank=True)
@@ -135,3 +140,40 @@ class Newsletter(models.Model):
         return f"{self.email}"
 
 
+
+class Profile(models.Model):
+    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    phone = models.CharField(max_length=200,null=True,blank=True)
+    profile_photo = models.ImageField(upload_to ="media/", null=True,blank=True)
+    other_images = models.ManyToManyField(Images,blank=True)
+    gender = models.CharField(max_length=10,null=True,blank=True,default="male")
+    age = models.IntegerField(default=0)
+    address = models.TextField(null=True,blank=True)
+    state = models.TextField(null=True,blank=True)
+    city = models.TextField(null=True,blank=True)
+
+    date= models.DateTimeField(auto_now_add = True)
+    
+    
+    def get_reset_token(self, expires_sec=600):
+        s = Serializer(settings.SECRET_KEY, expires_sec)
+        return s.dumps({'user_id': self.user.id}).decode('utf-8')
+
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(settings.SECRET_KEY)
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User2.objects.get(pk=user_id)
+    
+    def __str__(self):
+        return self.user.email
+
+
+def user_did_save(sender, instance, created, *args, **kwargs):
+    if created:
+        Profile.objects.get_or_create(user=instance)
+post_save.connect(user_did_save, sender=User)

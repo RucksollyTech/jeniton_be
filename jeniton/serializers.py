@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Reviews,Purchases,Items,Images,Items_Purchases,CityData
+from .models import Profile,Reviews,Purchases,Items,Images,Items_Purchases,CityData
 from django.contrib.auth.models import User
 # from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -56,6 +56,23 @@ class USerSerializer(serializers.ModelSerializer):
                 instance.set_password(password)
             instance.save()
             return instance
+
+
+
+class ProfileDeailSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField(read_only= True)
+    user = serializers.SerializerMethodField(read_only= True)
+    class Meta:
+        model = Profile
+        fields = [
+            "id","user","phone","profile_photo",
+            "name","other_images","gender","age","address",
+            "state","city","date"
+        ]
+    def get_name(self,obj):
+        return f"{obj.user.first_name} {obj.user.last_name}"
+    def get_user(self,obj):
+        return USerSerializer(obj.user).data
 
 
 

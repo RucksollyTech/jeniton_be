@@ -7,7 +7,9 @@ import datetime
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 
-from .models import CityData,USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
+from rest_framework import status
+
+from .models import Profile,CityData,USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
 from .serializers import Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
 
 from .authentication import decode_refresh_token,JWTAuthentication,create_access_token,create_refresh_token,decode_access_token
@@ -87,6 +89,35 @@ def make_reviews(request,*args,**kwargs):
     serializer = ReviewsSerializer(rev)
     serializers = ReviewsSerializer(obj.reviews.all()[:4],many=True)
     return Response({"review":serializer.data,"reviews":serializers.data},status=200)
+
+@api_view(['GET'])
+def default_search(request,*args,**kwargs):
+    popular = Items.objects.order_by('-popular').all()[:10]
+    all_new = Items.objects.order_by('-id').all()[:10]
+    luxurious = Items.objects.order_by('-price').all()[:10]
+    context= {
+        "popular": ItemsSerializer(popular,many = True).data,
+        "allNew" : ItemsSerializer(all_new,many = True).data,
+        "luxurious" : ItemsSerializer(luxurious,many = True).data,
+    }
+    return Response(context,status=200)
+
+# @api_view(['POST'])
+# def search(request,*args,**kwargs):
+#     query = request.data.get('search')
+#     if query:
+#         items = Items.objects.filter(
+#             Q(name__icontains=query) | 
+#             Q(category__icontains=query) | 
+#             Q(sizes__icontains=query) |  
+#             Q(color__icontains=query) |  
+#             Q(price__icontains=query)  
+#         )
+#         # items_data = list(items.values('id', 'name', 'categories', 'sizes', 'price'))
+#         results= ItemsSerializer(items,many = True).data
+#         return Response({"items":results},status=200)
+#     else:
+#         return Response([],status=404)
 
 class RegisterApiViews(APIView):
     def post(self, request):
@@ -178,22 +209,28 @@ class LogoutAPIView(APIView):
         response.status= 200
         return response
 
-
-
-
-
-
-
-
-
-
-@api_view(['GET'])
-def items_search(request,*args,**kwargs):
+@api_view(['POST'])
+def search(request,*args,**kwargs):
     page = request.query_params.get("page")
-    query = request.query_params.get("query")
+    search = request.query_params.get("search")
+    query = request.query_params.get("value")
     items =[]
+    if search:
+        items = Items.objects.filter(
+            Q(name__icontains=search) | 
+            Q(category__icontains=search) | 
+            Q(sizes__icontains=search) |  
+            Q(color__icontains=search) |  
+            Q(price__icontains=search)  
+        )
     if query:
-        items = Items.objects.filter(Q(description__icontains=query)| Q(name__icontains=query)| Q(price__icontains=query)).all()
+        if query == "popular":
+            items = Items.objects.order_by('-popular').all()
+        if query == "luxurious":
+            items = Items.objects.order_by('-price').all()
+        if query == "all_new":
+            items = Items.objects.order_by('-id').all()
+
     paginator = Paginator(items,20)
     
     try:
@@ -212,9 +249,116 @@ def items_search(request,*args,**kwargs):
         "page": page, 
         "pages": paginator.num_pages
     }
-      
-    
     return Response(context,status=200)
+
+
+@api_view(['POST'])
+def reset_request(request,*args,**kwargs):
+    email = request.data["data"]["email"]
+    # email = request.data
+    user = User.objects.filter(email=email).first()
+    if not user:
+        raise exceptions.ValidationError("Bad request")
+    profile= Profile.objects.filter(user=user).first()
+    send_reset_password_email(profile)
+    return Response({"success":"success"},status=200)
+
+
+@api_view(['GET','POST'])
+def reset_token(request,*args,**kwargs):
+    
+    data = request.data
+    user = Profile.verify_reset_token(data["token"])
+    if user is None:
+        message = {'detail': 'That is invalid or expired token. Please request reset password again'}
+        return Response(message, status=status.HTTP_400_BAD_REQUEST)
+    if not data:
+        message = {'detail': 'An Error occurred'}
+        return Response(message, status=status.HTTP_400_BAD_REQUEST)
+    user.password=make_password(data['password'])
+    user.save()
+    return Response({"success":"success"},status=201)
+
+
+
+def send_reset_password_email(user):
+    token = user.get_reset_token()
+    user= user.user
+    html_massage= f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reset password</title>
+        </head>
+        <body style="background-color: #F4F4F4; margin: 0; font-family: Arial;">
+            <div style="text-align: center;">
+                <img style="max-width: 50px;" src="{config('FRONTEND_URL')}/Images/kids multicultural logo 2.png" alt="">
+            </div>
+            <div style="display: flex;align-items: center; ">
+                <div style=" margin: 30px auto;max-width: 650px;width: 100%;position: relative;">
+                    <div style="background-color: #fff;border-radius: 0 0 10px 10px ;">
+                        <div style="background-color: #1A5FFF;padding: 1.5px;"></div>
+                        <div style="padding: 0 10px 10px 10px;">
+                            <div style="padding-top: 25px; font-size:15px; text-align: center;">
+                                To reset your password click on the button bellow:
+                            </div>
+                            <div style="padding: 30px 0 40px 0; font-size:15px;text-align: center;border-bottom: 1px solid #f1f1f1;">
+                                <a href="{settings.FRONTEND_URL}/reset-password/{token}" style="padding:8px 20px; background-color: #1A5FFF;text-decoration:none;color:#fff;border-radius: 3px;font-size: 14px;">Reset password</a>
+                            </div>
+                            <div style="padding-top: 30px; font-size:15px;text-align: center;">
+                                Or copy and paste the following link into your browser url {settings.FRONTEND_URL}/reset-password/{token}
+                            </div>
+                            <div style="padding-top: 25px; font-size:15px;text-align: center;">
+                                Please note that this link is only valid for 10 minutes.
+                            </div>
+                            <div style="padding-top: 30px; font-size:15px;text-align: center;">
+                                If you are unaware of this request, simply ignore this email and no changes will be made to your account.
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div style="text-align: center;padding-top: 20px;">
+                        <a style="color: transparent;" href="https://www.instagram.com/invites/contact/?i=r9f4juooz429&utm_content=9adyr3e">
+                            <img style="margin-right: 10px;" width="35" height="35" src="https://img.icons8.com/ios-glyphs/35/BABABA/instagram-new.png" alt="instagram-new"/>
+                        </a>
+                        <a style="color: transparent;" href="https://www.facebook.com/chicagokidsmulticulturalfashionshow?mibextid=LQQJ4d">
+                            <img width="35" height="35" src="https://img.icons8.com/ios-filled/35/BABABA/facebook-new.png" alt="facebook-new"/>
+                        </a>
+                    </div>
+                    <span style="
+                        padding: 15px;
+                        font-size: 11px;
+                        color: #6C757D;
+                        display: block;
+                        text-align: center;
+                        font-weight: 500;
+                    ">
+                        You received this email to let you know about important changes 
+                        to your Kids Multicultural World account.
+                        © 2023 Kids Multicultural World, PO BOX :
+                        90042 Henderson NV, 89009, USA
+                    </span>
+                </div>
+            </div>
+        </body>
+        </html>
+    """
+    subject, to = 'Reset password', user.email
+    text_content = ''
+    form_email = "kryspatra.services@gmail.com"
+    msg = EmailMultiAlternatives(subject, text_content,form_email, [to])
+    msg.attach_alternative(html_massage, "text/html")
+    msg.send(fail_silently=False)
+    
+
+
+
+
+
+
 
 @api_view(['POST'])
 def newsletter(request,*args,**kwargs):
