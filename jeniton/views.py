@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 
 from rest_framework import status
 
-from .models import Profile,CityData,USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
+from .models import Images,Profile,CityData,USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
 from .serializers import Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
 
 from .authentication import decode_refresh_token,JWTAuthentication,create_access_token,create_refresh_token,decode_access_token
@@ -26,7 +26,7 @@ from jeniton.mail_sender import sender_func
 # from jeniton.other_mails import other_mail
 
 from django.contrib.auth.models import User
-
+from django.core.files.base import ContentFile
 
 @api_view(['GET'])
 def home(request,*args,**kwargs):
@@ -254,7 +254,7 @@ def search(request,*args,**kwargs):
 
 @api_view(['POST'])
 def reset_request(request,*args,**kwargs):
-    email = request.data["data"]["email"]
+    email = request.data.get["email"]
     # email = request.data
     user = User.objects.filter(email=email).first()
     if not user:
@@ -354,9 +354,70 @@ def send_reset_password_email(user):
     msg.send(fail_silently=False)
     
 
+class add_items_view(APIView):
+    authentication_classes = [JWTAuthentication]
+    def post(self,request):
+        data = request.data
+        
+        if not data:
+            message = {'error': 'Invalid request'}
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
+        obj = Items.objects.create(
+            user = request.user,
+            name=data.get('name'),
+            category=data.get('category'),
+            price=data.get('price'),
+            cover_image=request.FILES.get('image'),
+        )
+        if request.FILES.getlist('files'):
+            for file in request.FILES.getlist('files'):
+                img = Images.objects.create(image=file)
+                obj.other_images.add(img)
+        if data.get('description'):
+            obj.description = data.get('description')
+            obj.save()
+        if data.get('material'):
+            obj.material = data.get('material')
+            obj.save()
+        if data.get('sustainability'):
+            obj.sustainability = data.get('sustainability')
+            obj.save()
+        if data.get('product_care'):
+            obj.product_care = data.get('product_care')
+            obj.save()
+        if data.get('extra_information'):
+            obj.extra_information = data.get('extra_information')
+            obj.save()
+        if data.get('color'):
+            obj.color = data.get('color')
+            obj.save()
+        if data.get('amount_available'):
+            obj.amount_available = data.get('amount_available')
+            obj.save()
+        if data.get('sizes_value_measurement'):
+            obj.sizes_value_measurement = data.get('sizes_value_measurement')
+            obj.save()
+        if data.get('dimensions_LHW_in_inches'):
+            obj.dimensions_LHW_in_inches = data.get('dimensions_LHW_in_inches')
+            obj.save()
+        if data.get('sizes'):
+            obj.sizes = data.get('sizes')
+            obj.save()
+        if data.get('properties'):
+            obj.properties_separated_with_double_comma = data.get('properties')
+            obj.save()
+        return Response({"id":obj.id},status=200)
 
 
-
+@api_view(['GET'])
+def edit_items_view(request,pk,*args,**kwargs):
+    
+    data = request.data
+    
+    
+    obj = Items.objects.filter(id__in=pk).all()
+    serializers = ItemsSerializer(obj, many = True)
+    return Response(serializers.data,status=200)
 
 
 

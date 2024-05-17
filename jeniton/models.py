@@ -47,6 +47,7 @@ class CityData(models.Model):
         return f"City data {self.id}"
 
 class Items(models.Model):
+    user = models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True) 
     name = models.CharField(max_length=1000)
     color = models.CharField(max_length=1000, null=True,blank=True) 
     category = models.CharField(max_length=1000, null=True,blank=True,default="Bag,Shoe or Hair") 

@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
+from jeniton.views import add_items_view,edit_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -16,6 +16,7 @@ urlpatterns = [
     path('api/write_reviews', make_reviews),
     path('api/update-cart', update_cart),
     path('api/search', search),
+    path('api/add_items', add_items_view.as_view()),
     path('api/forgot-password', reset_request),
     path('api/password-reset', reset_token),
     path('api/default/search', default_search),
@@ -25,6 +26,7 @@ urlpatterns = [
     path('api/user', UserAPIView.as_view()),
     path('api/refresh', RefreshAPIView.as_view()),
     path('api/logout', LogoutAPIView.as_view()),
+    path('api/edit_items/<str:pk>', edit_items_view),
     path('api/items_category/<str:cat>', find_category),
     path('api/item_detail/<str:pk>', item_detail),
     path('api/item_review/<str:pk>', item_review_data),
