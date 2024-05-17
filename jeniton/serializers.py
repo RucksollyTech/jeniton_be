@@ -33,12 +33,20 @@ class ReviewsSerializer(serializers.ModelSerializer):
 class ItemsSerializer(serializers.ModelSerializer):
     other_images = serializers.SerializerMethodField(read_only= True)
     reviews = serializers.SerializerMethodField(read_only= True)
+    
+    properties = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = Items
-        fields = ['id', 'name','is_sold_out','color','category','sizes','sizes_value_measurement','material','price','cover_image','reviews','description','dimensions_LHW_in_inches','properties_separated_with_double_comma','extra_information','sustainability','product_care','other_images','amount_available','date']
+        fields = ['id', 'name','is_sold_out','color','category','sizes','sizes_value_measurement','material','price','cover_image','reviews','description','dimensions_LHW_in_inches','properties','extra_information','sustainability','product_care','other_images','amount_available','date']
 
     def get_other_images(self,obj):
         return ImageSerializer(obj.other_images, many=True).data
+    def get_properties(self,obj):
+        if not obj.properties_separated_with_double_comma:
+            return ""
+        if obj.properties_separated_with_double_comma:
+            return obj.properties_separated_with_double_comma
+        return ""
     def get_reviews(self,obj):
         is_for_detail = self.context.get("detail")
         return ReviewsSerializer(obj.reviews.all()[:4] if is_for_detail else obj.reviews, many=True).data
