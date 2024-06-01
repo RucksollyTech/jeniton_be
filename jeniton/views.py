@@ -1,8 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.authentication import get_authorization_header
 from rest_framework import exceptions
-from rest_framework.decorators import api_view,authentication_classes
+from rest_framework.decorators import api_view,parser_classes
 import datetime
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
@@ -26,7 +25,10 @@ from jeniton.mail_sender import sender_func
 # from jeniton.other_mails import other_mail
 
 from django.contrib.auth.models import User
-from django.core.files.base import ContentFile
+
+
+from rest_framework.parsers import MultiPartParser
+
 
 @api_view(['GET'])
 def home(request,*args,**kwargs):
@@ -408,6 +410,20 @@ class add_items_view(APIView):
             obj.save()
         return Response({"id":obj.id},status=200)
 
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
+def verify_faces(request):
+    file1 = request.FILES.get('passport_image')
+    file2 = request.FILES.get('id_image')
+
+    if not file1 or not file2:
+        return JsonResponse({"error": "Both images are required"}, status=400)
+
+    
+    return JsonResponse({"isMatch": False}, status=400)
+
+    return JsonResponse({"error": "Failed"}, status=500)
 
 @api_view(['GET'])
 def edit_items_view(request,pk,*args,**kwargs):
