@@ -414,10 +414,9 @@ class add_items_view(APIView):
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
 def verify_faces(request):
-    file1 = request.FILES.get('passport_image')
-    file2 = request.FILES.get('id_image')
+    file1 = request.FILES.get('image')
 
-    if not file1 or not file2:
+    if not file1:
         return JsonResponse({"error": "Both images are required"}, status=400)
 
     
