@@ -452,19 +452,27 @@ class add_kyc_bio(APIView):
         data = request.data
         if not data:
             return JsonResponse({"error": "Both images are required"}, status=400)
-        # try:
-        profile, _ = Profile.objects.get_or_create(user=request.user)
-        profile.country = data.get("country")
-        profile.address = data.get("address")
-        profile.state = data.get("state")
-        profile.city = data.get("city")
-        profile.bio = True
+        try:
+            profile, _ = Profile.objects.get_or_create(user=request.user)
+            profile.country = data.get("country")
+            profile.address = data.get("address")
+            profile.state = data.get("state")
+            profile.city = data.get("city")
+            profile.bio = True
 
-        profile.save()
+            profile.save()
+            serializer = ProfileDetailSerializer(profile)
+            return Response(serializer.data, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+
+class GetProfile(APIView):
+    authentication_classes = [JWTAuthentication]
+    def get(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
         serializer = ProfileDetailSerializer(profile)
         return Response(serializer.data, status=200)
-        # except Exception as e:
-        #     return JsonResponse({"error": str(e)}, status=500)
 
 
 @api_view(['GET'])

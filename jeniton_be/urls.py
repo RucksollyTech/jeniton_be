@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,edit_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
+from jeniton.views import GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,edit_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -17,9 +17,14 @@ urlpatterns = [
     path('api/update-cart', update_cart),
     path('api/search', search),
     path('api/add_items', add_items_view.as_view()),
+    # Kyc
     path('api/upload-kyc-data-passport-pix', add_kyc_passport_image.as_view()),
     path('api/upload-kyc-data-id-pix', add_kyc_id_image.as_view()), #here
     path('api/upload-kyc-data-bio', add_kyc_bio.as_view()),
+
+    # profile
+    path('api/get-profile', GetProfile.as_view()),
+    
     path('api/forgot-password', reset_request),
     path('api/password-reset', reset_token),
     path('api/default/search', default_search),

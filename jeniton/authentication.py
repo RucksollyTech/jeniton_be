@@ -21,28 +21,27 @@ class JWTAuthentication(BaseAuthentication):
                 raise exceptions.AuthenticationFailed('User not found')
         raise exceptions.AuthenticationFailed('Authorization header missing')
 
-def create_access_token(_id):
+def create_access_token(user_id):
     return jwt.encode(
         {
-            'user_id': _id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30),
+            'user_id': user_id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=15),  # 15 minutes for access token
             'iat': datetime.datetime.utcnow()
         },
-        'access_secret', 
+        "access_secret", 
         algorithm='HS256'
     )
 
-def create_refresh_token(_id):
+def create_refresh_token(user_id):
     return jwt.encode(
         {
-            'user_id': _id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30),
+            'user_id': user_id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7),  # 7 days for refresh token
             'iat': datetime.datetime.utcnow()
         },
-        'refresh_secret', 
+        "refresh_secret", 
         algorithm='HS256'
     )
-
 
 def decode_access_token(token):
     try:

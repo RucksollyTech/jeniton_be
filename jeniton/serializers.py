@@ -85,9 +85,9 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         ]
     def get_name(self,obj):
         return f"{obj.user.first_name} {obj.user.last_name}"
-    def get_user(self,obj):
+    # def get_user(self,obj):
     #     return USerSerializer(obj.user).data
-    # def get_id_photo1(self,obj):
+    def get_id_photo1(self,obj):
         return True if obj.id_photo1 else False
     def get_id_photo2(self,obj):
         return True if obj.id_photo2 else False
