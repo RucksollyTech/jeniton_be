@@ -411,25 +411,25 @@ class add_items_view(APIView):
         return Response({"id":obj.id},status=200)
 
 
-@api_view(['POST'])
-@parser_classes([MultiPartParser])
-def verify_faces(request):
-    file1 = request.FILES.get('image')
+class verify_kyc(APIView):
+    parser_classes = [MultiPartParser]
+    authentication_classes = [JWTAuthentication]
 
-    if not file1:
-        return JsonResponse({"error": "Both images are required"}, status=400)
-
-    
-    return JsonResponse({"isMatch": False}, status=400)
-
-    return JsonResponse({"error": "Failed"}, status=500)
+    def post(self, request):
+        file1 = request.FILES.get('image')
+        if not file1:
+            return JsonResponse({"error": "Both images are required"}, status=400)
+        profile = Profile.objects.filter(request.user)
+        if not profile:
+            profile = Profile.create(user=request.user)
+        profile.passport_photo = file1
+        profile.save()
+        serializers = ItemsSerializer(profile, many = True)
+        return Response(serializers.data,status=200)
 
 @api_view(['GET'])
 def edit_items_view(request,pk,*args,**kwargs):
-    
     data = request.data
-    
-    
     obj = Items.objects.filter(id__in=pk).all()
     serializers = ItemsSerializer(obj, many = True)
     return Response(serializers.data,status=200)

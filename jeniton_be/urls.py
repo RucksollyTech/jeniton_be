@@ -17,8 +17,8 @@ urlpatterns = [
     path('api/update-cart', update_cart),
     path('api/search', search),
     path('api/add_items', add_items_view.as_view()),
-    path('api/upload-kyc-data-passport-pix', verify_kyc),
-    path('api/upload-kyc-data-id-pix', verify_kyc), #here 
+    path('api/upload-kyc-data-passport-pix', verify_kyc.as_view()),
+    path('api/upload-kyc-data-id-pix', verify_kyc.as_view()), #here 
     path('api/forgot-password', reset_request),
     path('api/password-reset', reset_token),
     path('api/default/search', default_search),
