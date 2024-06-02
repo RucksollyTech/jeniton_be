@@ -153,6 +153,7 @@ class Profile(models.Model):
     id_type = models.CharField(max_length=50,null=True,blank=True)
     country = models.CharField(max_length=200,null=True,blank=True)
     is_verified = models.BooleanField(default=False)
+    bio = models.BooleanField(default=False)
     attempt_verification = models.BooleanField(default=False)
     address = models.TextField(null=True,blank=True)
     state = models.TextField(null=True,blank=True)

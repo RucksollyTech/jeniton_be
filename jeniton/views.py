@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 from rest_framework import status
 
 from .models import Images,Profile,CityData,USerToken,Reviews,Purchases,Items,Items_Purchases,Newsletter
-from .serializers import Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
+from .serializers import ProfileDetailSerializer,Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
 
 from .authentication import decode_refresh_token,JWTAuthentication,create_access_token,create_refresh_token,decode_access_token
 
@@ -411,7 +411,24 @@ class add_items_view(APIView):
         return Response({"id":obj.id},status=200)
 
 
-class verify_kyc(APIView):
+class add_kyc_passport_image(APIView):
+    authentication_classes = [JWTAuthentication]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        file1 = request.FILES['file']
+        if not file1:
+            return JsonResponse({"error": "Invalid request"}, status=400)
+        try:
+            profile, _ = Profile.objects.get_or_create(user=request.user)
+            profile.passport_photo = file1
+            profile.save()
+            serializer = ProfileDetailSerializer(profile)
+            return Response(serializer.data, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+class add_kyc_id_image(APIView):
     parser_classes = [MultiPartParser]
     authentication_classes = [JWTAuthentication]
 
@@ -424,8 +441,31 @@ class verify_kyc(APIView):
             profile = Profile.create(user=request.user)
         profile.passport_photo = file1
         profile.save()
-        serializers = ItemsSerializer(profile, many = True)
+        serializers = ProfileDetailSerializer(profile, many = True)
         return Response(serializers.data,status=200)
+
+class add_kyc_bio(APIView):
+    parser_classes = [MultiPartParser]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        data = request.data
+        if not data:
+            return JsonResponse({"error": "Both images are required"}, status=400)
+        # try:
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile.country = data.get("country")
+        profile.address = data.get("address")
+        profile.state = data.get("state")
+        profile.city = data.get("city")
+        profile.bio = True
+
+        profile.save()
+        serializer = ProfileDetailSerializer(profile)
+        return Response(serializer.data, status=200)
+        # except Exception as e:
+        #     return JsonResponse({"error": str(e)}, status=500)
+
 
 @api_view(['GET'])
 def edit_items_view(request,pk,*args,**kwargs):
