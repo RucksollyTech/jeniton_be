@@ -69,7 +69,7 @@ class USerSerializer(serializers.ModelSerializer):
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField(read_only= True)
-    # user = serializers.SerializerMethodField(read_only= True)
+    complete_id = serializers.SerializerMethodField(read_only= True)
     id_photo1 = serializers.SerializerMethodField(read_only= True)
     id_photo2 = serializers.SerializerMethodField(read_only= True)
     passport_photo = serializers.SerializerMethodField(read_only= True)
@@ -80,17 +80,20 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             "phone","profile_photo",
             "attempt_verification","is_verified",
             "id_type","id_photo1","id_photo2",
-            "passport_photo","bio",
+            "passport_photo","bio","complete_id",
             "name","date"
         ]
     def get_name(self,obj):
         return f"{obj.user.first_name} {obj.user.last_name}"
-    # def get_user(self,obj):
-    #     return USerSerializer(obj.user).data
+    def get_complete_id(self,obj):
+        if obj.id_type == "International passport":
+            return True if obj.id_photo1 else False
+        return True if (obj.id_photo1 and obj.id_photo2) else False
     def get_id_photo1(self,obj):
         return True if obj.id_photo1 else False
     def get_id_photo2(self,obj):
         return True if obj.id_photo2 else False
+    
     def get_passport_photo(self,obj):
         return True if obj.passport_photo else False
 
