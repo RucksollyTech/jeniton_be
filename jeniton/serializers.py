@@ -86,14 +86,13 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     def get_name(self,obj):
         return f"{obj.user.first_name} {obj.user.last_name}"
     def get_complete_id(self,obj):
-        if obj.id_type == "International passport":
+        if obj.id_type == "ID":
             return True if obj.id_photo1 else False
         return True if (obj.id_photo1 and obj.id_photo2) else False
     def get_id_photo1(self,obj):
         return True if obj.id_photo1 else False
     def get_id_photo2(self,obj):
         return True if obj.id_photo2 else False
-    
     def get_passport_photo(self,obj):
         return True if obj.passport_photo else False
 

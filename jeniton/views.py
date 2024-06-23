@@ -438,26 +438,25 @@ class add_kyc_id_image(APIView):
         if not file1:
             return JsonResponse({"error": "Images are required"}, status=400)
         profile, _ = Profile.objects.get_or_create(user=request.user)
-        # try:
-        if data.get('info') != "International passport":
-            if data.get('side') == "front":
-                profile.id_type = data.get('info')
-                profile.id_photo1 = file1
-                profile.save()
-            else:
-                profile.id_type = data.get('info')
-                profile.id_photo2 = file1
-                profile.save()
+        try:
+            if data.get('info') != "ID":
+                if data.get('side') == "front":
+                    profile.id_type = data.get('info')
+                    profile.id_photo1 = file1
+                    profile.save()
+                else:
+                    profile.id_type = data.get('info')
+                    profile.id_photo2 = file1
+                    profile.save()
+                serializers = ProfileDetailSerializer(profile)
+                return Response(serializers.data,status=200)
+            profile.id_type = data.get('info')
+            profile.id_photo1 = file1
+            profile.save()
             serializers = ProfileDetailSerializer(profile)
             return Response(serializers.data,status=200)
-        
-        profile.id_type = data.get('info')
-        profile.id_photo1 = file1
-        profile.save()
-        serializers = ProfileDetailSerializer(profile)
-        return Response(serializers.data,status=200)
-        # except:
-        #     return JsonResponse({"error": "Invalid data"}, status=400)
+        except:
+            return JsonResponse({"error": "Invalid data"}, status=400)
         
 
 class add_kyc_bio(APIView):
