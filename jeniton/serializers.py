@@ -77,7 +77,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             # "user",
-            "phone","profile_photo",
+            "phone","profile_photo", "ballance",
             "attempt_verification","is_verified",
             "id_type","id_photo1","id_photo2",
             "passport_photo","bio","complete_id",

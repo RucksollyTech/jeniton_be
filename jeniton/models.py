@@ -149,6 +149,7 @@ class Profile(models.Model):
     passport_photo = models.ImageField(upload_to ="media/", null=True,blank=True)
     id_photo1 = models.ImageField(upload_to ="media/", null=True,blank=True)
     id_photo2 = models.ImageField(upload_to ="media/", null=True,blank=True)
+    ballance = models.IntegerField(default =0)
     # other_images = models.ManyToManyField(Images,blank=True)
     id_type = models.CharField(max_length=50,null=True,blank=True)
     country = models.CharField(max_length=200,null=True,blank=True)

@@ -457,6 +457,24 @@ class add_kyc_id_image(APIView):
             return Response(serializers.data,status=200)
         except:
             return JsonResponse({"error": "Invalid data"}, status=400)
+
+class add_profile_img(APIView):
+    parser_classes = [MultiPartParser]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        file1 = request.FILES.get('file')
+        print(request.FILES)
+        if not file1:
+            return JsonResponse({"error": "Images are required"}, status=400)
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        # try:       
+        profile.profile_photo = file1
+        profile.save()
+        serializers = ProfileDetailSerializer(profile)
+        return Response(serializers.data,status=200)
+        # except:
+        #     return JsonResponse({"error": "Invalid data"}, status=400)
         
 
 class add_kyc_bio(APIView):
