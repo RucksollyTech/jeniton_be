@@ -167,6 +167,7 @@ class LoginAPIView(APIView):
         USerToken.objects.create(user_id=user.id, token=refresh_token, expired_at=datetime.datetime.utcnow() + datetime.timedelta(days=7))
         response = Response()
         response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
+        response.set_cookie(key="token",value=access_token,httponly=True)
         # response.data ={
         #     "token" : access_token
         # }
@@ -182,25 +183,38 @@ class UserAPIView(APIView):
     def get(self,request):
         serializer = USerSerializer(request.user)
         return Response({"user":serializer.data},status=200)
+    
+class AllUserItems(APIView):
+    authentication_classes = [JWTAuthentication]
+    def get(self,request):
+        items = Items.objects.filter(user=request.user).all()
+        serializer = ItemsSerializer(items, many=True)
+        return Response(serializer.data,status=200)
 
 class RefreshAPIView(APIView):
     def post(self,request):
         refresh_token = request.data.get('refresh_token')
-        # refresh_token = request.COOKIES.get('refresh_token')
+        refresh_toke = request.COOKIES.get('refresh_token')
+        print(request.COOKIES)
         _id = decode_refresh_token(refresh_token)
         if not USerToken.objects.filter(user_id=_id,token=refresh_token,expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc)).exists():
             raise exceptions.AuthenticationFailed("Invalid token")
         access_token = create_access_token(_id)
         user = User.objects.get(pk=_id)
         serializer = USerSerializer(user)
-        return Response({
+        response = Response()
+        response.set_cookie(key="access_token",value=access_token,httponly=True)
+
+        return response.data({
             "token" : access_token,
             "user" : serializer.data,
         })
 
 class LogoutAPIView(APIView):
     def post(self,request):
-        # refresh_token = request.COOKIES.get("refresh_token")
+        refresh_toke = request.COOKIES.get("refresh_token")
+        print(refresh_toke)
+
         refresh_token = request.data.get("data")
         USerToken.objects.filter(token=refresh_token).delete()
         response = Response()

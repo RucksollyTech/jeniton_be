@@ -62,12 +62,14 @@ class Items(models.Model):
     sizes_value_measurement = models.CharField(max_length=1000, null=True,blank=True,default="UK") 
     description = models.TextField( null=True,blank=True)
     is_sold_out = models.BooleanField(default=False)
+    in_store = models.BooleanField(default=False)
     dimensions_LHW_in_inches = models.CharField(max_length=1000, null=True,blank=True,default="0 x 0 x 0")
     properties_separated_with_double_comma = models.TextField( null=True,blank=True,default="Ankara Item,,Durable")
     extra_information = models.TextField( null=True,blank=True)
     sustainability = models.TextField( null=True,blank=True)
     product_care = models.TextField( null=True,blank=True)
     counter = models.IntegerField(default =0)
+    status =  models.CharField(max_length=8, null=True,blank=True,default="Available") #Finished
     date= models.DateTimeField(auto_now_add = True)
     
     class Meta:
@@ -81,6 +83,8 @@ class Items_Purchases(models.Model):
     item = models.ForeignKey(Items,on_delete=models.SET_NULL,null=True,blank=True) 
     email = models.CharField(max_length=1000)
     counter = models.IntegerField(default =1)
+    status =  models.CharField(max_length=8, null=True,blank=True,default="Not Paid") #Paid
+
     date= models.DateTimeField(auto_now_add = True)
 
     class Meta:
