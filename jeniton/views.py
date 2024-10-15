@@ -28,7 +28,7 @@ from django.contrib.auth.models import User
 
 
 from rest_framework.parsers import MultiPartParser
-
+from django.db import transaction
 
 @api_view(['GET'])
 def home(request,*args,**kwargs):
@@ -529,7 +529,80 @@ def edit_items_view(request,pk,*args,**kwargs):
     serializers = ItemsSerializer(obj, many = True)
     return Response(serializers.data,status=200)
 
+class EditItemsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    def post(self,request, pk, *args, **kwargs):
+        data = request.data
+        user = request.user
+        if not data:
+            message = {'error': 'Invalid request'}
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
+        obj = Items.objects.get(pk=pk)
+        if obj:
+            if obj.user != user:
+                message = {'error': 'Invalid user'}
+                return Response(message, status=403)
+            if request.FILES.get('image'):
+                if obj.cover_image:  
+                    obj.cover_image.delete()  
+                obj.cover_image = request.FILES.get('image')
+            if request.FILES.getlist('files'):
+                related_images = obj.other_images.all()
+                if related_images:
+                    with transaction.atomic():
+                        obj.other_images.clear() 
+                        for image in related_images:
+                            if image.image:  
+                                image.image.delete()  
+                            image.delete()
 
+                for file in request.FILES.getlist('files'):
+                    img = Images.objects.create(image=file)
+                    obj.other_images.add(img)
+            if not request.FILES.getlist('files'):
+                related_images = obj.other_images.all()
+                if related_images:
+                    with transaction.atomic():
+                        obj.other_images.clear() 
+                        for image in related_images:
+                            if image.image:  
+                                image.image.delete()  
+                            image.delete()
+            if data.get('description'):
+                obj.description = data.get('description')
+                obj.save()
+            if data.get('material'):
+                obj.material = data.get('material')
+                obj.save()
+            if data.get('sustainability'):
+                obj.sustainability = data.get('sustainability')
+                obj.save()
+            if data.get('product_care'):
+                obj.product_care = data.get('product_care')
+                obj.save()
+            if data.get('extra_information'):
+                obj.extra_information = data.get('extra_information')
+                obj.save()
+            if data.get('color'):
+                obj.color = data.get('color')
+                obj.save()
+            if data.get('amount_available'):
+                obj.amount_available = data.get('amount_available')
+                obj.save()
+            if data.get('sizes_value_measurement'):
+                obj.sizes_value_measurement = data.get('sizes_value_measurement')
+                obj.save()
+            if data.get('dimensions_LHW_in_inches'):
+                obj.dimensions_LHW_in_inches = data.get('dimensions_LHW_in_inches')
+                obj.save()
+            if data.get('sizes'):
+                obj.sizes = data.get('sizes')
+                obj.save()
+            if data.get('properties'):
+                obj.properties_separated_with_double_comma = data.get('properties')
+                obj.save()
+            return Response({"id":obj.id},status=200)
+        return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def newsletter(request,*args,**kwargs):
