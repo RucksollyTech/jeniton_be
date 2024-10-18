@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import EditItemsView,AllUserItems,add_profile_img,GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
+from jeniton.views import AllUserFinished,AllUserAvailable,EditItemsView,AllUserItems,add_profile_img,GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -32,6 +32,8 @@ urlpatterns = [
     path('api/location-data', delivery_location_data),
     path('api/register', RegisterApiViews.as_view()),
     path('api/user-all-items', AllUserItems.as_view()),
+    path('api/user-all-available', AllUserAvailable.as_view()),
+    path('api/user-all-finished', AllUserFinished.as_view()),
     path('api/login', LoginAPIView.as_view()),
     path('api/user', UserAPIView.as_view()),
     path('api/refresh', RefreshAPIView.as_view()),

@@ -191,6 +191,20 @@ class AllUserItems(APIView):
         serializer = ItemsSerializer(items, many=True)
         return Response(serializer.data,status=200)
 
+class AllUserAvailable(APIView):
+    authentication_classes = [JWTAuthentication]
+    def get(self,request):
+        items = Items.objects.filter(user=request.user,status="Available").all()
+        serializer = ItemsSerializer(items, many=True)
+        return Response(serializer.data,status=200)
+
+class AllUserFinished(APIView):
+    authentication_classes = [JWTAuthentication]
+    def get(self,request):
+        items = Items.objects.filter(user=request.user,status="Finished").all()
+        serializer = ItemsSerializer(items, many=True)
+        return Response(serializer.data,status=200)
+
 class RefreshAPIView(APIView):
     def post(self,request):
         refresh_token = request.data.get('refresh_token')
@@ -600,6 +614,9 @@ class EditItemsView(APIView):
                 obj.save()
             if data.get('properties'):
                 obj.properties_separated_with_double_comma = data.get('properties')
+                obj.save()
+            if data.get('status'):
+                obj.status = data.get('status')
                 obj.save()
             return Response({"id":obj.id},status=200)
         return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
