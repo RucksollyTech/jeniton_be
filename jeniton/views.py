@@ -26,9 +26,10 @@ from jeniton.mail_sender import sender_func
 
 from django.contrib.auth.models import User
 
-
 from rest_framework.parsers import MultiPartParser
 from django.db import transaction
+
+from rest_framework.pagination import LimitOffsetPagination
 
 @api_view(['GET'])
 def home(request,*args,**kwargs):
@@ -183,46 +184,79 @@ class UserAPIView(APIView):
     def get(self,request):
         serializer = USerSerializer(request.user)
         return Response({"user":serializer.data},status=200)
-    
+
 class AllUserItems(APIView):
     authentication_classes = [JWTAuthentication]
+
     def get(self,request):
         items = Items.objects.filter(user=request.user).all()
-        serializer = ItemsSerializer(items, many=True)
-        return Response(serializer.data,status=200)
+        paginator = LimitOffsetPagination()
+        paginated_items = paginator.paginate_queryset(items, request)
+        serializer = ItemsSerializer(paginated_items, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    def post(self,request):
+        search = request.data.get("search")
+        print(search["data"])
+        if search:
+            items = Items.objects.filter(user=request.user).all()
+            items = items.filter(
+                Q(name__icontains=search["data"]) | 
+                Q(price__icontains=search["data"])  
+            )
+            # print(items)
+            paginator = LimitOffsetPagination()
+            paginated_items = paginator.paginate_queryset(items, request)
+            serializer = ItemsSerializer(paginated_items, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        
 
 class AllUserAvailable(APIView):
     authentication_classes = [JWTAuthentication]
     def get(self,request):
         items = Items.objects.filter(user=request.user,status="Available").all()
-        serializer = ItemsSerializer(items, many=True)
-        return Response(serializer.data,status=200)
+        paginator = LimitOffsetPagination()
+        paginated_items = paginator.paginate_queryset(items, request)
+        serializer = ItemsSerializer(paginated_items, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
 class AllUserFinished(APIView):
     authentication_classes = [JWTAuthentication]
     def get(self,request):
         items = Items.objects.filter(user=request.user,status="Finished").all()
-        serializer = ItemsSerializer(items, many=True)
-        return Response(serializer.data,status=200)
+        paginator = LimitOffsetPagination()
+        paginated_items = paginator.paginate_queryset(items, request)
+        serializer = ItemsSerializer(paginated_items, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class RefreshAPIView(APIView):
-    def post(self,request):
-        refresh_token = request.data.get('refresh_token')
-        refresh_toke = request.COOKIES.get('refresh_token')
-        print(request.COOKIES)
+    def post(self, request):
+        refresh_token = request.data.get('refresh_token') 
+        print(refresh_token, "refresh_token")
         _id = decode_refresh_token(refresh_token)
-        if not USerToken.objects.filter(user_id=_id,token=refresh_token,expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc)).exists():
+        print(_id, "ID")
+        
+        if not USerToken.objects.filter(
+            user_id=_id,
+            token=refresh_token,
+            expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc)
+        ).exists():
+            print("Was here")
             raise exceptions.AuthenticationFailed("Invalid token")
+        
         access_token = create_access_token(_id)
         user = User.objects.get(pk=_id)
+        print(user)
         serializer = USerSerializer(user)
-        response = Response()
-        response.set_cookie(key="access_token",value=access_token,httponly=True)
-
-        return response.data({
-            "token" : access_token,
-            "user" : serializer.data,
+        
+        response = Response({
+            "token": access_token,
+            "user": serializer.data,
         })
+        response.set_cookie(key="access_token", value=access_token, httponly=True)
+        
+        return response
+
 
 class LogoutAPIView(APIView):
     def post(self,request):
@@ -536,13 +570,6 @@ class GetProfile(APIView):
         return Response(serializer.data, status=200)
 
 
-@api_view(['GET'])
-def edit_items_view(request,pk,*args,**kwargs):
-    data = request.data
-    obj = Items.objects.filter(id__in=pk).all()
-    serializers = ItemsSerializer(obj, many = True)
-    return Response(serializers.data,status=200)
-
 class EditItemsView(APIView):
     authentication_classes = [JWTAuthentication]
     def post(self,request, pk, *args, **kwargs):
@@ -620,6 +647,33 @@ class EditItemsView(APIView):
                 obj.save()
             return Response({"id":obj.id},status=200)
         return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self,request, pk, *args, **kwargs):
+        user = request.user
+        obj = Items.objects.get(pk=pk)
+        if obj:
+            if obj.user != user:
+                message = {'error': 'Invalid user'}
+                return Response(message, status=403)
+            serializer = ItemsSerializer(obj)
+            # Check if the items appears anywhere for other user if not delete it
+            # Else just delete other images
+
+            # if obj.cover_image:  
+            #     obj.cover_image.delete()
+            related_images = obj.other_images.all()
+            if related_images:
+                with transaction.atomic():
+                    obj.other_images.clear() 
+                    for image in related_images:
+                        if image.image:  
+                            image.image.delete()  
+                        image.delete() 
+            obj.available = False
+            obj.save()
+            return Response(serializer.data,status=200)
+        return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 @api_view(['POST'])
 def newsletter(request,*args,**kwargs):

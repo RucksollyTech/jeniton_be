@@ -63,6 +63,7 @@ class Items(models.Model):
     description = models.TextField( null=True,blank=True)
     is_sold_out = models.BooleanField(default=False)
     in_store = models.BooleanField(default=False)
+    available = models.BooleanField(default=True)
     dimensions_LHW_in_inches = models.CharField(max_length=1000, null=True,blank=True,default="0 x 0 x 0")
     properties_separated_with_double_comma = models.TextField( null=True,blank=True,default="Ankara Item,,Durable")
     extra_information = models.TextField( null=True,blank=True)

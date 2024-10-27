@@ -55,7 +55,7 @@ def decode_access_token(token):
         raise exceptions.AuthenticationFailed(str(e))
     
 def decode_refresh_token(token):
-    print(token)
+    print(token,"refresh")
     try:
         payload = jwt.decode(token,'refresh_secret', algorithms=['HS256'])
         return payload['user_id']
