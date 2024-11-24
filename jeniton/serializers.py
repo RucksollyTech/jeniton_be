@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile,Reviews,Purchases,Items,Images,Items_Purchases,CityData
+from .models import Profile,Reviews,Purchases,Items,Images,Orders,CityData
 from django.contrib.auth.models import User
 # from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -9,9 +9,9 @@ class ImageSerializer(serializers.ModelSerializer):
         model = Images
         fields = ['id', 'image']
 
-class Items_PurchasesSerializer(serializers.ModelSerializer):
+class OrdersSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Items_Purchases
+        model = Orders
         fields = '__all__'
 
 class Location_Data_Serializer(serializers.ModelSerializer):
@@ -37,7 +37,14 @@ class ItemsSerializer(serializers.ModelSerializer):
     properties = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = Items
-        fields = ['id', 'name','status','available','is_sold_out','in_store','color','category','sizes','sizes_value_measurement','material','price','cover_image','reviews','description','dimensions_LHW_in_inches','properties','extra_information','sustainability','product_care','other_images','amount_available','date']
+        fields = [
+            'id', 'name','status','available','is_sold_out','in_store',
+            'color','category','sizes','sizes_value_measurement',
+            'material','price','cover_image','reviews','description',
+            'dimensions_LHW_in_inches','properties','extra_information',
+            'sustainability','product_care','other_images',
+            'amount_available','date'
+        ]
 
     def get_other_images(self,obj):
         return ImageSerializer(obj.other_images, many=True).data
@@ -70,13 +77,14 @@ class USerSerializer(serializers.ModelSerializer):
 class ProfileDetailSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField(read_only= True)
     complete_id = serializers.SerializerMethodField(read_only= True)
+    user = serializers.SerializerMethodField(read_only= True)
     id_photo1 = serializers.SerializerMethodField(read_only= True)
     id_photo2 = serializers.SerializerMethodField(read_only= True)
     passport_photo = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = Profile
         fields = [
-            # "user",
+            "user",
             "phone","profile_photo", "ballance",
             "attempt_verification","is_verified",
             "id_type","id_photo1","id_photo2",
@@ -85,6 +93,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         ]
     def get_name(self,obj):
         return f"{obj.user.first_name} {obj.user.last_name}"
+    def get_user(self,obj):
+        return USerSerializer(obj.user).data
     def get_complete_id(self,obj):
         if obj.id_type == "ID":
             return True if obj.id_photo1 else False

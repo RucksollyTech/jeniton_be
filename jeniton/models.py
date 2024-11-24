@@ -3,8 +3,13 @@ from django.db.models.signals import post_save
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from django.conf import settings
 from jeniton.mail_sender import sender_func
-User = settings.AUTH_USER_MODEL
 from django.contrib.auth.models import User as User2
+import random
+User = settings.AUTH_USER_MODEL
+
+def generate_unique_id():
+    unique_id = ''.join(random.choices('0123456789', k=12))
+    return unique_id
 
 
 class USerToken(models.Model):
@@ -57,7 +62,7 @@ class Items(models.Model):
     cover_image = models.ImageField(upload_to ="media/", null=True,blank=True)
     other_images = models.ManyToManyField(Images,blank=True)
     reviews = models.ManyToManyField(Reviews,blank=True)
-    amount_available = models.IntegerField(default =0)
+    amount_available = models.IntegerField(default =-2000)
     sizes = models.CharField(max_length=1000, null=True,blank=True) 
     sizes_value_measurement = models.CharField(max_length=1000, null=True,blank=True,default="UK") 
     description = models.TextField( null=True,blank=True)
@@ -80,16 +85,37 @@ class Items(models.Model):
         return f"{self.name}"
 
 
-class Items_Purchases(models.Model):
+class Orders(models.Model):
+    owner = models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True)
     item = models.ForeignKey(Items,on_delete=models.SET_NULL,null=True,blank=True) 
-    email = models.CharField(max_length=1000)
     counter = models.IntegerField(default =1)
-    status =  models.CharField(max_length=8, null=True,blank=True,default="Not Paid") #Paid
+    # To determine is for seller or customer
+    bought = models.BooleanField(default=True)
+    drop_off_id = models.IntegerField(default =1)
+    dropped_off_id = models.IntegerField(default =1)
+    status =  models.CharField(max_length=8, null=True,blank=True,default="Not Delivered") #Delivered # Undelivered
 
     date= models.DateTimeField(auto_now_add = True)
 
     class Meta:
         ordering= ["-date"]
+    
+    def save(self, *args, **kwargs):
+        def get_id():
+            random_id = 0
+            def checker(id_field):
+                check_orders= Order.objects.filter(drop_off_id = random_id)
+                return check_orders
+            contiNue = True
+            while contiNue:
+                random_id = generate_unique_id()
+                if not checker(random_id):
+                    contiNue = False
+            return random_id
+
+        random_id = get_id()
+        self.drop_off_id = random_id
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.email}"
@@ -104,12 +130,10 @@ class Purchases(models.Model):
     state = models.CharField(max_length=1000,default="USA")
     zipcode = models.CharField(max_length=1000,null=True,blank=True)
     phone= models.CharField(max_length=1000,null=True,blank=True)
-    purchase_id = models.CharField(max_length=20, default=0)
     price = models.IntegerField(default =0)
     apartment = models.CharField(max_length=1000,null=True,blank=True)
-    item = models.ManyToManyField(Items_Purchases,blank=True) 
+    item = models.ManyToManyField(Orders,blank=True) 
     counter = models.IntegerField(default =1)
-    success = models.BooleanField(default=False)
     delivered = models.BooleanField(default=False)
     dont_touch_this_for_system_use_only = models.BooleanField(default=False)
     reference = models.CharField(max_length=1000,null=True,blank=True)

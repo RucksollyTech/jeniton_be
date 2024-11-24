@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import AllUserFinished,AllUserAvailable,EditItemsView,AllUserItems,add_profile_img,GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
+from jeniton.views import VerifyView,AllUserFinished,AllUserAvailable,EditItemsView,AllUserItems,add_profile_img,GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -25,6 +25,9 @@ urlpatterns = [
     # profile add_profile_img
     path('api/get-profile', GetProfile.as_view()),
     path('api/set-profile-pix', add_profile_img.as_view()),
+
+    # Checkout VerifyView
+    path('api/verify_transaction', VerifyView.as_view()),
     
     path('api/forgot-password', reset_request),
     path('api/password-reset', reset_token),
