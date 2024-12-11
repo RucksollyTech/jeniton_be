@@ -8,8 +8,8 @@ from django.contrib.auth.hashers import make_password
 
 from rest_framework import status
 
-from .models import Images,Profile,CityData,USerToken,Reviews,Purchases,Items,Newsletter
-from .serializers import ProfileDetailSerializer,Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
+from .models import Images,Notifications,Profile,Orders,CityData,USerToken,Reviews,Purchases,Items,Newsletter
+from .serializers import OrdersSerializer,PurchasesSerializer,ProfileDetailSerializer,Location_Data_Serializer,ItemsSerializer,ReviewsSerializer,USerSerializer
 
 from .authentication import decode_refresh_token,JWTAuthentication,create_access_token,create_refresh_token,decode_access_token
 
@@ -32,6 +32,9 @@ from django.db import transaction
 from rest_framework.pagination import LimitOffsetPagination
 import requests
 from rest_framework.permissions import AllowAny
+
+from .email.purchase import purchase_mail_sender
+from .email.seller_notification import seller_mail_sender
 
 DEBUG = config("DEBUG", default=False, cast=bool)
 
@@ -188,6 +191,32 @@ class UserAPIView(APIView):
     def get(self,request):
         serializer = USerSerializer(request.user)
         return Response({"user":serializer.data},status=200)
+
+class sold_items(APIView):
+    authentication_classes = [JWTAuthentication]
+
+    def get(self,request):
+        orders = Orders.objects.filter(owner=request.user,available=True).all()
+        print(orders,"orders")
+
+        paginator = LimitOffsetPagination()
+        paginated_orders = paginator.paginate_queryset(orders, request)
+        serializer = OrdersSerializer(paginated_orders, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    def post(self,request):
+        search = request.data.get("search")
+        print(search["data"])
+        if search:
+            orders = Orders.objects.filter(owner=request.user).all()
+            orders = orders.filter(
+                Q(name__icontains=search["data"]) | 
+                Q(price__icontains=search["data"])  
+            )
+            paginator = LimitOffsetPagination()
+            paginated_orders = paginator.paginate_queryset(orders, request)
+            serializer = OrdersSerializer(paginated_orders, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        
 
 class AllUserItems(APIView):
     authentication_classes = [JWTAuthentication]
@@ -678,6 +707,33 @@ class EditItemsView(APIView):
             return Response(serializer.data,status=200)
         return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
 
+class get_order_detail(APIView):
+    authentication_classes = [JWTAuthentication]
+    def get(self,request, pk, *args, **kwargs):
+        user = request.user
+        obj = Orders.objects.filter(drop_off_id=pk,owner=user).first()
+        if obj:
+            serializer = OrdersSerializer(obj)
+            return Response(serializer.data, status=200)
+        return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self,request, pk, *args, **kwargs):
+        user = request.user
+        obj = Orders.objects.filter(drop_off_id=pk,owner=user).first()
+        purchase =  Purchases.objects.filter(reference= obj.purchase_reference).first()
+        if obj:
+            obj.available = False
+            obj.save()
+            seller_mail_sender({
+                "title": "Order Cancelled",
+                "message": f"Your order with reference number {obj.drop_off_id} has been cancelled.",
+                "body": "All payment will be reversed in due time. Thank you for choosing Faittone",
+                "to": purchase.email,
+            })
+            serializer = ItemsSerializer(obj)
+            return Response(serializer.data,status=200)
+        return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 def calculate_Price(x):
     price = 0
     for i in x["item"]:
@@ -707,86 +763,82 @@ class VerifyView(APIView):
         header= {
             'Authorization': f'Bearer {config("PAYSTACK_SECRET_KEY_TEST")}'
         }
+        print(data.get("reference"),"reference")
+        print(config("PAYSTACK_SECRET_KEY_TEST"),"he;loo")
         
-        try:
-            response = requests.get(url, headers=header)
+        # try:
+        response = requests.get(url, headers=header)
 
-            verification_data = response.json()
-            # print(data)
-            # {'status': True, 'message': 'Verification successful', 'data': {'id': 4395262314, 'domain': 'test', 'status': 'abandoned', 'reference': '7c7e2b3lkg', 'receipt_number': None, 'amount': 5394500, 'message': None, 'gateway_response': 'The transaction was not completed', 'paid_at': None, 'created_at': '2024-11-20T12:25:18.000Z', 'channel': 'card', 'currency': 'NGN', 'ip_address': '102.91.92.24, 141.101.99.215, 172.31.68.120', 'metadata': '', 'log': None, 'fees': None, 'fees_split': None, 'authorization': {}, 'customer': {'id': 208731480, 'first_name': None, 'last_name': None, 'email': 'anthonychibuzorokenwa@gmail.com', 'customer_code': 'CUS_45tl70ji4n8pni1', 'phone': None, 'metadata': None, 'risk_action': 'default', 'international_format_phone': None}, 'plan': None, 'split': {}, 'order_id': None, 'paidAt': None, 'createdAt': '2024-11-20T12:25:18.000Z', 'requested_amount': 5394500, 'pos_transaction_data': None, 'source': None, 'fees_breakdown': None, 'connect': None, 'transaction_date': '2024-11-20T12:25:18.000Z', 'plan_object': {}, 'subaccount': {}}}
-            if verification_data.status == True:
-                # Check for amount paid if it tallied with the amount 
-                # and number from db and data provided
-                total_calc_price = calculate_Price(data)
-                if total_calc_price != float(data.get("price")):
-                    return Response({"error": "Invalid transaction"}, status=400)
-                # Create a new transaction
-                transaction_obj = Purchases.objects.create(
-                    email = received_data_address["email"],
-                    name = received_data_address["name"],
-                    users_address=received_data_address["users_address"],
-                    country = received_data_address["country"],
-                    city = received_data_address["city"],
-                    zipcode = received_data_address["zipcode"],
-                    price= int(data.get("price")),
-                    counter = data.get("totalItems"),
-                    phone=received_data_address["phone"],
-                    state = received_data_address["state"],
-                    reference = data.get("reference"),
+        verification_data = response.json()
+        if verification_data.status == True:
+            # Check for amount paid if it tallied with the amount 
+            # and number from db and data provided
+            total_calc_price = calculate_Price(data)
+            if total_calc_price != float(data.get("price")):
+                return Response({"error": "Invalid transaction"}, status=400)
+            # Create a new transaction
+            transaction_obj = Purchases.objects.create(
+                email = received_data_address["email"],
+                name = received_data_address["name"],
+                users_address=received_data_address["users_address"],
+                country = received_data_address["country"],
+                city = received_data_address["city"],
+                zipcode = received_data_address["zipcode"],
+                price= int(data.get("price")),
+                counter = data.get("totalItems"),
+                phone=received_data_address["phone"],
+                state = received_data_address["state"],
+                reference = data.get("reference"),
+            )
+
+            # save the transaction to the respective vendors (the orders)
+            for i in data.get("item"):
+                item_sold = Items.objects.get(pk=int(i["id"]))
+                if item_sold:
+                    # Reduce the amount of the particular Item if it have a limited amount
+                    if item_sold.amount_available != -2000 and item_sold.amount_available > 0 :
+                        item_sold.amount_available = item_sold.amount_available - int(i["counter"])
+                        item_sold.save()
+                if item_sold.amount_available == 0:
+                    item_sold.available = False
+                    item_sold.save()
+                # Create an order for the user
+                # and update the status of the order for seller if a user
+                # Create an order for the seller
+                
+                order_obj = Orders.objects.create(
+                    owner=item_sold.user,
+                    user=user if user else None,
+                    item=item_sold,
+                    price=item_sold.price,
+                    display_id= transaction_obj.order_id,
+                    counter=int(i["counter"]),
+                    color=received_data_items["color"],
+                    size=received_data_items["sizes"],
+                    purchase_reference=data.get("reference")
+                )
+                transaction_obj.add(order_obj)
+                transaction_obj.save()
+
+                # Create notification for this transaction to the seller
+                Notifications.objects.create(
+                    user=item_sold.user,
+                    title="New Order",
+                    order_id=order_obj.id,
+                    content=f"New order has been received for {item_sold.name}.",
+                    priority=1,
                 )
                 
-                # save the transaction to the respective vendors (the orders)
-                for i in data.get("item"):
-                    item_sold = Items.objects.get(pk=int(i["id"]))
-                    if item_sold:
-                        # Reduce the amount of the particular Item if it have a limited amount
-                        if item_sold.amount_available != -2000 and item_sold.amount_available > 0 :
-                            item_sold.amount_available = item_sold.amount_available - int(i["counter"])
-                            item_sold.save()
-                    if item_sold.amount_available == 0:
-                        item_sold.available = False
-                        item_sold.save()
-                    # Create an order for the user
-                    if user:
-                        order_obj = Orders.objects.create(
-                            owner=user,
-                            bought=true,
-                            item=item_sold,
-                            price=item_sold.price,
-                            counter=int(i["counter"]),
-                        )
-                    # Create an order for the seller
-                    order_obj = Orders.objects.create(
-                        owner=item_sold.user,
-                        item=item_sold,
-                        price=item_sold.price,
-                        counter=int(i["counter"]),
-                    )
-                    transaction_obj.add(order_obj)
-                    transaction_obj.save()
-                
-                # Send a notification to the seller
-                def mailSender():
-                    pass
-                    # and send them a mail for the items and where to send it to
-                    # and update the status of the order for seller if a user
-                    # and send an email or push notification to the seller
-                    # Create order id
-                    # Send the order ID to the seller
-                    # Also send an email to the seller email
-                    # send_mail(obj.seller.email, 'Order Delivery', delivery_massage, html_massage)
-                    # send_notification(obj.seller.phone, 'Order Delivery', delivery_massage)
-                    # send_push_notification(obj.seller.phone, 'Order Delivery', delivery_massage)
-                
-                # send_mail(obj.user.email, 'Order Delivery', delivery_massage, html_massage)
-                # send_notification(obj.user.phone, 'Order Delivery', delivery_massage)
-                # send_push_notification(obj.user.phone, 'Order Delivery', delivery_massage)
-                # send_sms(obj.user.phone, 'Order Delivery', delivery_massage)
-                return Response({"id":"success"},status=200)
-            else:
-                return Response({"error": "Invalid transaction"}, status=400)
-        except:
-            return Response({"error": "An error occurred while verifying the transaction"}, status=500)
+            # Send a notification to the seller
+            seller_mail_sender()
+
+            # and send an email or push notification to the seller
+            purchase_mail_sender(data,[])                
+            return Response({"id":"success"},status=200)
+        else:
+            return Response({"error": "Invalid transaction"}, status=400)
+        # except:
+        #     return Response({"error": "An error occurred while verifying the transaction"}, status=500)
 
 @api_view(['POST'])
 def newsletter(request,*args,**kwargs):

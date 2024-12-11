@@ -10,9 +10,12 @@ class ImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image']
 
 class OrdersSerializer(serializers.ModelSerializer):
+    item = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = Orders
-        fields = '__all__'
+        exclude = ['user', 'owner']
+    def get_item(self,obj):
+        return ItemsSerializer(obj.item).data
 
 class Location_Data_Serializer(serializers.ModelSerializer):
     class Meta:

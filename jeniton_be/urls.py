@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from jeniton.views import VerifyView,AllUserFinished,AllUserAvailable,EditItemsView,AllUserItems,add_profile_img,GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
+from jeniton.views import VerifyView,get_order_detail,AllUserFinished,AllUserAvailable,EditItemsView,AllUserItems,sold_items,add_profile_img,GetProfile,add_kyc_bio,add_kyc_id_image,add_kyc_passport_image,add_items_view,reset_token,reset_request,search,default_search,delivery_location_data,update_cart,LogoutAPIView,RefreshAPIView,UserAPIView,LoginAPIView,RegisterApiViews,home,find_category,make_reviews,unsubscribe,item_review_data,item_detail,all_items,newsletter
  #,CreatePaymentIntent
 
 urlpatterns = [
@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/update-cart', update_cart),
     path('api/search', search),
     path('api/add_items', add_items_view.as_view()),
+    path('api/user-sold-items', sold_items.as_view()),
     # Kyc
     path('api/upload-kyc-data-passport-pix', add_kyc_passport_image.as_view()),
     path('api/upload-kyc-data-id-pix', add_kyc_id_image.as_view()), #here
@@ -44,6 +45,7 @@ urlpatterns = [
     # path('api/edit_items/<str:pk>', edit_items_view),
     path('api/edit_items/<str:pk>', EditItemsView.as_view()),
     path('api/items_category/<str:cat>', find_category),
+    path('api/get_order/<str:pk>', get_order_detail.as_view()),
     path('api/item_detail/<str:pk>', item_detail),
     path('api/item_review/<str:pk>', item_review_data),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

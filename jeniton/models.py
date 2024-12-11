@@ -7,8 +7,8 @@ from django.contrib.auth.models import User as User2
 import random
 User = settings.AUTH_USER_MODEL
 
-def generate_unique_id():
-    unique_id = ''.join(random.choices('0123456789', k=12))
+def generate_unique_id(k):
+    unique_id = ''.join(random.choices('0123456789', k=k))
     return unique_id
 
 
@@ -42,6 +42,17 @@ class Reviews(models.Model):
     def __str__(self):
         return f"Review--{self.value}"
 
+class Notifications(models.Model):
+    user = models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True) 
+    viewed = models.BooleanField(default=True)
+    priority = models.IntegerField(default =0)
+    title = models.CharField(max_length=255, null= True , blank=True)
+    content = models.TextField(null= True, blank=True)
+    order_id= models.IntegerField(null= True, blank=True)
+    date= models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        ordering= ["-id"]
 
 class CityData(models.Model):
     data = models.JSONField()
@@ -87,13 +98,17 @@ class Items(models.Model):
 
 class Orders(models.Model):
     owner = models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True)
-    item = models.ForeignKey(Items,on_delete=models.SET_NULL,null=True,blank=True) 
+    user = models.ForeignKey(User,related_name="buyer",on_delete=models.SET_NULL,null=True,blank=True)
+    item = models.ForeignKey(Items,on_delete=models.SET_NULL,null=True,blank=True)
     counter = models.IntegerField(default =1)
-    # To determine is for seller or customer
-    bought = models.BooleanField(default=True)
+    price = models.IntegerField(default =0)
+    color= models.CharField(max_length=10,null=True, blank=True)
+    size = models.TextField(null=True, blank=True)
+    available = models.BooleanField(default=True)
     drop_off_id = models.IntegerField(default =1)
-    dropped_off_id = models.IntegerField(default =1)
-    status =  models.CharField(max_length=8, null=True,blank=True,default="Not Delivered") #Delivered # Undelivered
+    display_id = models.IntegerField(default =1)
+    purchase_reference = models.CharField(max_length =20, blank = True, null=True)
+    status =  models.CharField(max_length=20, null=True,blank=True,default="Not dispatched") #Dispatched 
 
     date= models.DateTimeField(auto_now_add = True)
 
@@ -101,28 +116,31 @@ class Orders(models.Model):
         ordering= ["-date"]
     
     def save(self, *args, **kwargs):
-        def get_id():
-            random_id = 0
-            def checker(id_field):
-                check_orders= Order.objects.filter(drop_off_id = random_id)
-                return check_orders
-            contiNue = True
-            while contiNue:
-                random_id = generate_unique_id()
-                if not checker(random_id):
-                    contiNue = False
-            return random_id
+        if not self.drop_off_id :
+            def get_id():
+                random_id = 0
+                def checker(id_field):
+                    check_orders= Orders.objects.filter(drop_off_id = id_field)
+                    return check_orders
+                contiNue = True
+                while contiNue:
+                    random_id = generate_unique_id(11)
+                    if not checker(random_id):
+                        contiNue = False
+                return random_id
 
-        random_id = get_id()
-        self.drop_off_id = random_id
+            random_id = get_id()
+            self.drop_off_id = random_id
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.email}"
+        return f"{self.drop_off_id}"
 
 
 class Purchases(models.Model):
     name = models.CharField(max_length=1000,null=True,blank=True)
+    # To determine is for seller or customer
+    bought = models.BooleanField(default=False)
     email = models.CharField(max_length=1000,null=True,blank=True)
     users_address = models.CharField(max_length=1000,null=True,blank=True)
     country= models.CharField(max_length=1000,null=True,blank=True)
@@ -131,12 +149,14 @@ class Purchases(models.Model):
     zipcode = models.CharField(max_length=1000,null=True,blank=True)
     phone= models.CharField(max_length=1000,null=True,blank=True)
     price = models.IntegerField(default =0)
+    order_id = models.IntegerField(default =0)
     apartment = models.CharField(max_length=1000,null=True,blank=True)
     item = models.ManyToManyField(Orders,blank=True) 
     counter = models.IntegerField(default =1)
     delivered = models.BooleanField(default=False)
+    received = models.BooleanField(default=False)
     dont_touch_this_for_system_use_only = models.BooleanField(default=False)
-    reference = models.CharField(max_length=1000,null=True,blank=True)
+    reference = models.CharField(max_length=20,null=True,blank=True)
     date= models.DateTimeField(auto_now_add = True)
     
     class Meta:
@@ -153,10 +173,23 @@ class Purchases(models.Model):
             }
             self.dont_touch_this_for_system_use_only = True
             sender_func(self.email,thData)
+        def get_id():
+            random_id = generate_unique_id(12)
+            def checker(id_field):
+                check_orders= Purchases.objects.filter(order_id = id_field)
+                return check_orders
+            contiNue = True
+            while contiNue:
+                random_id = generate_unique_id(6)
+                if not checker(random_id):
+                    contiNue = False
+            return random_id
+        random_id = get_id()
+        self.order_id = random_id
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.purchase_id}--{self.email}--{'Delivered' if self.delivered else ''}"
+        return f"{self.order_id}"
     
 
 class Newsletter(models.Model):
